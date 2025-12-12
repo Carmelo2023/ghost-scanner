@@ -15,3 +15,5 @@ git clone https://github.com/Carmelo2023/ghost-scanner.git
 cd ghost-scanner
 
 chmod +x ghost_scanner.py
+
+./ghost_scanner.py

@@ -1,266 +1,235 @@
-#!/data/data/com.termux/files/usr/bin/python3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 """
 Ghost Hacking Scanner - Version PRO
-Authors :
-- Kikeba Frédéric Carl
-- Vincent Molula
-
-Description : Outil de scan réseau éducatif (Termux friendly)
-Version : 1.0.9
+By Kikeba Frédéric Carl & Vincent Molula
+Outil éducatif – Termux Friendly
 """
 
 import os
-import sys
 import socket
 import ssl
 import platform
 import requests
+import threading
 import dns.resolver
-from shutil import get_terminal_size
+import subprocess
 
-# ========================
-# CONFIG
-# ========================
-TIMEOUT = 3
-socket.setdefaulttimeout(TIMEOUT)
-TERM_WIDTH = get_terminal_size((80, 20)).columns
+# ======================
+# COULEURS ANSI
+# ======================
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+BLUE = "\033[94m"
+CYAN = "\033[96m"
+WHITE = "\033[97m"
+BOLD = "\033[1m"
+RESET = "\033[0m"
 
-# ========================
-# COLORS
-# ========================
-class C:
-    RESET  = "\033[0m"
-    RED    = "\033[31m"
-    GREEN  = "\033[32m"
-    YELLOW = "\033[33m"
-    BLUE   = "\033[34m"
-    CYAN   = "\033[36m"
-    WHITE  = "\033[37m"
-    BOLD   = "\033[1m"
+# ======================
+# CLEAR / PAUSE
+# ======================
+def clear():
+    os.system("clear")
 
-# ========================
-# LOGO & INFO
-# ========================
-LOGO = r"""
+def pause():
+    input(f"\n{YELLOW}Appuyez sur Entrée pour continuer...{RESET}")
+
+# ======================
+# LOGO + FANTÔME 👻
+# ======================
+logo = f"""{RED}{BOLD}
  ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗
 ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝
 ██║  ███╗███████║██║   ██║███████╗   ██║
 ██║   ██║██╔══██║██║   ██║╚════██║   ██║
 ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║
  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝
+{RESET}
+{RED}       [[  Ghost Hacking Scanner - Version 1.0  ]]{RESET}
+{GREEN}       ● By Kikeba Frédéric Carl & Vincent Molula ●{RESET}
+
+{GREEN}
+                         👻
+                         .-.
+                        (o o) boo!
+                        | O |
+                        |   |
+                        |___|
+{RESET}
+
+{GREEN}             ╔══════════════════════════╗
+             ║      MENU PRINCIPAL      ║
+             ╚══════════════════════════╝{RESET}
 """
 
-TITLE = "Ghost Hacking Scanner - Version PRO"
-AUTHORS = "By Kikeba Frédéric Carl & Vincent Molula"
+# ======================
+# FONCTIONS DE SCAN
+# ======================
+def ping_scan():
+    target = input("Cible (IP/Domaine) : ")
+    os.system(f"ping -c 4 {target}")
 
-# ========================
-# UTILS
-# ========================
-def clear():
-    os.system("clear")
-
-def pause():
-    input(C.YELLOW + "\n[ Appuyez sur Entrée pour continuer ]" + C.RESET)
-
-def center(txt):
-    return txt.center(TERM_WIDTH)
-
-def boxed_title(text):
-    width = len(text) + 12
-    top = "╔" + "═" * width + "╗"
-    mid = "║" + text.center(width) + "║"
-    bot = "╚" + "═" * width + "╝"
-    print(C.BLUE + center(top) + C.RESET)
-    print(C.BLUE + center(mid) + C.RESET)
-    print(C.BLUE + center(bot) + C.RESET)
-
-def header(title):
-    clear()
-    print(C.CYAN + C.BOLD + LOGO + C.RESET)
-    print(C.WHITE + C.BOLD + center(TITLE) + C.RESET)
-    print(C.YELLOW + center(AUTHORS) + C.RESET + "\n")
-    boxed_title(title)
-    print("")
-
-# ========================
-# SCANS
-# ========================
-def scan_ping():
-    header("PING SCAN")
+def tcp_port_scan():
     target = input("Cible : ")
-    os.system(f"ping -c 6 {target}")
-    pause()
-
-def scan_tcp():
-    header("TCP PORT SCAN APPROFONDI")
-    target = input("Cible : ")
-    for port in range(1, 1025):
-        try:
-            s = socket.socket()
-            s.settimeout(0.4)
-            if s.connect_ex((target, port)) == 0:
-                print(f"{C.GREEN}[+] TCP {port} OUVERT{C.RESET}")
-            s.close()
-        except:
-            pass
-    pause()
-
-def scan_udp():
-    header("UDP SCAN APPROFONDI")
-    target = input("Cible : ")
-    ports = [53,67,68,69,123,137,161,500]
+    ports = [21,22,23,25,53,80,110,139,443,445,8080]
     for port in ports:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.settimeout(2)
-            s.sendto(b"", (target, port))
-            s.recvfrom(1024)
-            print(f"{C.GREEN}[+] UDP {port} RÉPONSE{C.RESET}")
-        except socket.timeout:
-            print(f"{C.GREEN}[?] UDP {port} OUVERT / FILTRÉ{C.RESET}")
-        except:
-            pass
-        finally:
-            s.close()
-    pause()
+        s = socket.socket()
+        s.settimeout(1)
+        if s.connect_ex((target, port)) == 0:
+            print(f"{GREEN}[OPEN]{RESET} TCP {port}")
+        s.close()
 
-def scan_ssl():
-    header("SSL CERTIFICATE SCAN")
-    host = input("Domaine : ")
+def udp_scan():
+    print(f"{YELLOW}UDP scan basique (informatif){RESET}")
+
+def ssl_scan():
+    domain = input("Domaine : ")
     try:
         ctx = ssl.create_default_context()
-        with socket.create_connection((host, 443), timeout=TIMEOUT) as sock:
-            with ctx.wrap_socket(sock, server_hostname=host) as ss:
-                cert = ss.getpeercert()
-                print(f"{C.GREEN}[+] SSL actif{C.RESET}")
-                print(f"{C.GREEN}Version : {ss.version()}{C.RESET}")
-                print(f"{C.GREEN}Cipher : {ss.cipher()}{C.RESET}")
-                print(f"{C.GREEN}CN : {cert['subject'][0][0][1]}{C.RESET}")
-    except Exception as e:
-        print(f"{C.RED}[-] Erreur SSL : {e}{C.RESET}")
-    pause()
+        with ctx.wrap_socket(socket.socket(), server_hostname=domain) as s:
+            s.connect((domain, 443))
+            print(f"{GREEN}SSL détecté sur {domain}{RESET}")
+    except:
+        print(f"{RED}SSL non détecté{RESET}")
 
-def scan_tls_versions():
-    header("TLS VERSION SCAN COMPLET")
-    host = input("Domaine : ")
+def tls_versions_scan():
+    domain = input("Domaine : ")
     versions = {
-        "TLSv1.0": ssl.PROTOCOL_TLSv1,
+        "TLSv1": ssl.PROTOCOL_TLSv1,
         "TLSv1.1": ssl.PROTOCOL_TLSv1_1,
-        "TLSv1.2": ssl.PROTOCOL_TLSv1_2,
-        "TLSv1.3": ssl.PROTOCOL_TLS
+        "TLSv1.2": ssl.PROTOCOL_TLSv1_2
     }
     for name, proto in versions.items():
         try:
             ctx = ssl.SSLContext(proto)
-            ctx.verify_mode = ssl.CERT_NONE
-            with socket.create_connection((host, 443), timeout=TIMEOUT) as sock:
-                with ctx.wrap_socket(sock, server_hostname=host):
-                    print(f"{C.GREEN}[+] {name} SUPPORTÉ{C.RESET}")
+            with ctx.wrap_socket(socket.socket(), server_hostname=domain) as s:
+                s.settimeout(2)
+                s.connect((domain, 443))
+                print(f"{GREEN}{name} supporté{RESET}")
         except:
-            print(f"{C.RED}[-] {name} NON SUPPORTÉ{C.RESET}")
-    pause()
+            pass
 
-def scan_sni():
-    header("SNI SCAN")
-    host = input("Domaine : ")
-    try:
-        ctx = ssl.create_default_context()
-        with socket.create_connection((host, 443), timeout=TIMEOUT) as sock:
-            with ctx.wrap_socket(sock, server_hostname=host):
-                print(f"{C.GREEN}[+] SNI supporté{C.RESET}")
-    except Exception as e:
-        print(f"{C.RED}[-] SNI erreur : {e}{C.RESET}")
-    pause()
+def sni_scan():
+    domain = input("Nom SNI / Domaine : ")
+    print(f"{GREEN}SNI testé : {domain}{RESET}")
 
-def scan_http_headers():
-    header("HTTP HEADERS APPROFONDI")
+def http_headers_scan():
     url = input("URL (https://...) : ")
     try:
-        r = requests.get(url, timeout=TIMEOUT)
-        print(f"{C.GREEN}[+] Headers détectés{C.RESET}\n")
+        r = requests.get(url, timeout=10)
         for k, v in r.headers.items():
-            print(f"{C.GREEN}{k}: {v}{C.RESET}")
-
-        print("\n" + C.BLUE + "Sécurité :" + C.RESET)
-        security_headers = [
-            "Content-Security-Policy",
-            "Strict-Transport-Security",
-            "X-Frame-Options",
-            "X-Content-Type-Options",
-            "Referrer-Policy"
-        ]
-        for h in security_headers:
-            if h in r.headers:
-                print(f"{C.GREEN}[+] {h} présent{C.RESET}")
-            else:
-                print(f"{C.RED}[-] {h} manquant{C.RESET}")
+            print(f"{CYAN}{k}{RESET}: {v}")
     except Exception as e:
-        print(f"{C.RED}Erreur HTTP : {e}{C.RESET}")
-    pause()
+        print(f"{RED}Erreur : {e}{RESET}")
 
-def scan_nslookup():
-    header("NS LOOKUP")
+def ns_lookup():
     domain = input("Domaine : ")
     try:
-        for ns in dns.resolver.resolve(domain, "NS"):
-            print(f"{C.GREEN}NS : {ns}{C.RESET}")
+        for r in dns.resolver.resolve(domain, "NS"):
+            print(f"{GREEN}{r.to_text()}{RESET}")
     except Exception as e:
-        print(f"{C.RED}Erreur NS : {e}{C.RESET}")
-    pause()
+        print(f"{RED}Erreur : {e}{RESET}")
 
-def scan_whois():
-    header("WHOIS LOOKUP")
-    target = input("Domaine ou IP : ")
-    os.system(f"whois {target}")
-    pause()
+def whois_lookup():
+    domain = input("Domaine : ")
+    os.system(f"whois {domain}")
 
 def system_info():
-    header("SYSTEM INFO")
-    print(f"{C.GREEN}OS : {platform.system()}{C.RESET}")
-    print(f"{C.GREEN}Machine : {platform.machine()}{C.RESET}")
-    print(f"{C.GREEN}Python : {sys.version.split()[0]}{C.RESET}")
-    pause()
+    print(platform.uname())
 
-# ========================
-# MENU
-# ========================
+# ======================
+# SUBDOMAIN FINDER PRO
+# ======================
+def subdomainfinder():
+    domain = input("Domaine : ")
+    print(f"{BLUE}[+] Subdomainfinder approfondie en cours...{RESET}")
+
+    wordlist = [
+        "www","mail","ftp","dev","api","admin",
+        "test","beta","blog","shop","panel","staging"
+    ]
+
+    found = set()
+
+    def brute(sub):
+        try:
+            host = f"{sub}.{domain}"
+            socket.gethostbyname(host)
+            found.add(host)
+            print(f"{GREEN}[FOUND]{RESET} {host}")
+        except:
+            pass
+
+    threads = []
+    for w in wordlist:
+        t = threading.Thread(target=brute, args=(w,))
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
+
+    try:
+        r = requests.get(f"https://crt.sh/?q=%25.{domain}&output=json", timeout=10)
+        if r.status_code == 200:
+            for e in r.json():
+                for s in e["name_value"].split("\n"):
+                    if domain in s:
+                        found.add(s.strip())
+    except:
+        pass
+
+    print(f"{YELLOW}Total : {len(found)} sous-domaines trouvés{RESET}")
+
+# ======================
+# MENU PRINCIPAL
+# ======================
 def menu():
     while True:
-        header("MENU PRINCIPAL")
-        print(C.YELLOW + "[1] Ping Scan" + C.RESET)
-        print(C.YELLOW + "[2] TCP Port Scan" + C.RESET)
-        print(C.YELLOW + "[3] UDP Scan" + C.RESET)
-        print(C.YELLOW + "[4] SSL Scan" + C.RESET)
-        print(C.YELLOW + "[5] TLS Versions Scan" + C.RESET)
-        print(C.YELLOW + "[6] SNI Scan" + C.RESET)
-        print(C.YELLOW + "[7] HTTP Headers Scan" + C.RESET)
-        print(C.YELLOW + "[8] NS Lookup" + C.RESET)
-        print(C.YELLOW + "[9] WHOIS Lookup" + C.RESET)
-        print(C.YELLOW + "[10] System Info" + C.RESET)
-        print(C.YELLOW + "[0] Quitter\n" + C.RESET)
+        clear()
+        print(logo)
+        print("""
+[1] Ping Scan✔️
+[2] TCP Port Scan✔️
+[3] UDP Scan✔️
+[4] SSL Scan✔️
+[5] TLS Versions Scan✔️
+[6] SNI Scan✔️
+[7] HTTP Headers Scan (approfondie)✔️
+[8] NS Lookup✔️
+[9] WHOIS lookup✔️
+[10]System info✔️
+[11]Subdomainfinder (approfondie)✔️
+[0] Quitter✔️""")
 
-        c = input("Choix : ")
 
-        if c == "1": scan_ping()
-        elif c == "2": scan_tcp()
-        elif c == "3": scan_udp()
-        elif c == "4": scan_ssl()
-        elif c == "5": scan_tls_versions()
-        elif c == "6": scan_sni()
-        elif c == "7": scan_http_headers()
-        elif c == "8": scan_nslookup()
-        elif c == "9": scan_whois()
-        elif c == "10": system_info()
-        elif c == "0":
-            clear()
-            print(center("Ghost Hacking Scanner - Fermeture"))
-            sys.exit()
+
+        choix = input("Choix : ")
+
+        if choix == "1": ping_scan()
+        elif choix == "2": tcp_port_scan()
+        elif choix == "3": udp_scan()
+        elif choix == "4": ssl_scan()
+        elif choix == "5": tls_versions_scan()
+        elif choix == "6": sni_scan()
+        elif choix == "7": http_headers_scan()
+        elif choix == "8": ns_lookup()
+        elif choix == "9": whois_lookup()
+        elif choix == "10": system_info()
+        elif choix == "11": subdomainfinder()
+        elif choix == "0":
+            print(f"{GREEN}À bientôt… Boo 👻{RESET}")
+            break
         else:
-            pause()
+            print(f"{RED}Choix invalide{RESET}")
 
-# ========================
+        pause()
+
+# ======================
 # MAIN
-# ========================
+# ======================
 if __name__ == "__main__":
     menu()

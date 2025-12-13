@@ -18,5 +18,5 @@ mv ghost $PREFIX/bin/
 echo ""
 echo "===================================="
 echo "  Ghost Hacking Scanner installé !"
-echo "  Lancement : ghost"
+echo "  Lancement : python ghost_scanner.py"
 echo "===================================="

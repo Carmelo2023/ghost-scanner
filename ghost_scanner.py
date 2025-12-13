@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/data/data/com.termux/files/usr/bin/python3
 
 """
 Ghost Hacking Scanner - Version PRO
